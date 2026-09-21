@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Money Flows — Personal Wealth & Expense OS</title>
+  
+  <!-- Modern Fintech Typography -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  
+  <!-- Chart.js & jsPDF Local/CDN Compatible -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+  
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <!-- Floating Toast Notification System -->
+  <div id="toast-container" class="toast-container" aria-live="polite"></div>
+
+  <div class="app-layout">
+    <!-- Sidebar Navigation -->
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-logo">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>
+          </svg>
+        </div>
+        <div class="brand-info">
+          <h2>Money Flows</h2>
+          <span class="badge-status">Offline Local DB</span>
+        </div>
+      </div>
+
+      <nav class="nav-menu">
+        <button class="nav-item active" data-tab="dashboard" id="btn-tab-dashboard">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/></svg>
+          <span>Dashboard</span>
+        </button>
+        <button class="nav-item" data-tab="history" id="btn-tab-history">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg>
+          <span>Transactions</span>
+        </button>
+        <button class="nav-item" data-tab="reports" id="btn-tab-reports">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+          <span>Audit Reports</span>
+        </button>
+      </nav>
+
+      <div class="sidebar-actions">
+        <button class="btn btn-primary w-full" id="btn-open-income">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          <span>Money Received</span>
+        </button>
+        <button class="btn btn-secondary w-full" id="btn-open-expense">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          <span>Add Expense</span>
+        </button>
+        <button class="btn btn-outline w-full" id="btn-open-starting-balance">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/></svg>
+          <span>Starting Capital</span>
+        </button>
+      </div>
+
+      <div class="sidebar-footer">
+        <div class="storage-tag">
+          <span class="pulse-dot"></span>
+          <span>Encrypted Local Disk</span>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main class="main-wrapper">
+      <!-- Top Utility Header -->
+      <header class="topbar">
+        <div class="topbar-title">
+          <h1 id="page-heading">Financial Overview</h1>
+          <p id="page-subheading">Real-time local ledger & portfolio cashflow metrics</p>
+        </div>
+        <div class="topbar-controls">
+          <button class="icon-toggle-btn" id="currency-toggle-btn" title="Toggle Symbol Display (₹ / Rs.)">
+            <span class="font-mono">₹/Rs</span>
+          </button>
+          <button class="icon-toggle-btn" id="theme-toggle-btn" title="Toggle Theme">
+            <svg id="theme-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+          </button>
+          <button class="btn btn-ghost" id="btn-export-backup" title="Download Local JSON Backup">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+            <span>Backup</span>
+          </button>
+          <label class="btn btn-ghost cursor-pointer" title="Import Local JSON Data">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+            <span>Restore</span>
+            <input type="file" id="input-import-backup" accept=".json" style="display:none;">
+          </label>
+        </div>
+      </header>
+
+      <!-- View: Dashboard -->
+      <section id="view-dashboard" class="view-content active">
+        <!-- Metric Grid -->
+        <div class="metrics-grid">
+          <div class="metric-card primary-card">
+            <div class="card-glow"></div>
+            <div class="card-meta">
+              <span>Current Available Balance</span>
+              <div class="card-chip">Net Total</div>
+            </div>
+            <div class="card-number font-tabular" id="card-current-balance">₹0</div>
+            <div class="card-subtext">
+              <span id="card-starting-balance-ref">Starting Cap: ₹0</span>
+            </div>
+          </div>
+
+          <div class="metric-card">
+            <div class="card-meta">
+              <span>Today's Outflow</span>
+              <span class="indicator-dot orange"></span>
+            </div>
+            <div class="card-number font-tabular text-warning" id="card-today-spending">₹0</div>
+            <div class="card-subtext" id="card-today-status">Active calendar date</div>
+          </div>
+
+          <div class="metric-card">
+            <div class="card-meta">
+              <span>This Week (Mon-Sun)</span>
+              <span class="indicator-dot blue"></span>
+            </div>
+            <div class="card-number font-tabular" id="card-week-spending">₹0</div>
+            <div class="card-subtext" id="card-week-comparison">Current 7-day cycle</div>
+          </div>
+
+          <div class="metric-card">
+            <div class="card-meta">
+              <span>This Calendar Month</span>
+              <span class="indicator-dot purple"></span>
+            </div>
+            <div class="card-number font-tabular" id="card-month-spending">₹0</div>
+            <div class="card-subtext" id="card-month-comparison">Monthly aggregate</div>
+          </div>
+
+          <div class="metric-card">
+            <div class="card-meta">
+              <span>Total Capital Received</span>
+              <span class="indicator-dot green"></span>
+            </div>
+            <div class="card-number font-tabular text-success" id="card-total-received">₹0</div>
+            <div class="card-subtext" id="card-income-count">0 deposits logged</div>
+          </div>
+
+          <div class="metric-card">
+            <div class="card-meta">
+              <span>Total Capital Spent</span>
+              <span class="indicator-dot red"></span>
+            </div>
+            <div class="card-number font-tabular text-danger" id="card-total-spent">₹0</div>
+            <div class="card-subtext" id="card-expense-count">0 expenses recorded</div>
+          </div>
+        </div>
+
+        <!-- Secondary Analytics Row -->
+        <div class="analytics-strip">
+          <div class="stat-pill">
+            <span class="lbl">Total Transactions</span>
+            <strong id="stat-transaction-count">0</strong>
+          </div>
+          <div class="stat-pill">
+            <span class="lbl">Daily Average</span>
+            <strong id="stat-avg-spending">₹0</strong>
+          </div>
+          <div class="stat-pill">
+            <span class="lbl">Peak Single Expense</span>
+            <strong id="stat-max-expense" class="text-danger">₹0</strong>
+          </div>
+          <div class="stat-pill">
+            <span class="lbl">Top Volume Category</span>
+            <strong id="stat-top-category">—</strong>
+          </div>
+        </div>
+
+        <!-- Visual Analytics Grid -->
+        <div class="charts-grid">
+          <div class="chart-container-card span-2">
+            <div class="chart-header">
+              <div>
+                <h3>Spending Trajectory</h3>
+                <p>Daily expense velocity over time</p>
+              </div>
+            </div>
+            <div class="canvas-wrapper">
+              <canvas id="chart-daily"></canvas>
+            </div>
+          </div>
+
+          <div class="chart-container-card">
+            <div class="chart-header">
+              <div>
+                <h3>Asset Allocation</h3>
+                <p>Categorical outflow distribution</p>
+              </div>
+            </div>
+            <div class="canvas-wrapper doughnut-wrap">
+              <canvas id="chart-category"></canvas>
+            </div>
+          </div>
+
+          <div class="chart-container-card">
+            <div class="chart-header">
+              <div>
+                <h3>Monthly Comparison</h3>
+                <p>Aggregated burn rate per month</p>
+              </div>
+            </div>
+            <div class="canvas-wrapper">
+              <canvas id="chart-monthly"></canvas>
+            </div>
+          </div>
+
+          <div class="chart-container-card span-2">
+            <div class="chart-header">
+              <div>
+                <h3>Liquidity Trendline</h3>
+                <p>Net cumulative cash reserve timeline</p>
+              </div>
+            </div>
+            <div class="canvas-wrapper">
+              <canvas id="chart-balance"></canvas>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- View: Transactions -->
+      <section id="view-history" class="view-content">
+        <div class="panel-card">
+          <div class="table-toolbar">
+            <div class="search-box">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+              <input type="text" id="tx-search" placeholder="Search memo, category, source...">
+            </div>
+            
+            <div class="filter-group">
+              <select id="tx-filter-type" class="form-select">
+                <option value="all">All Flow Types</option>
+                <option value="income">Incoming Deposits</option>
+                <option value="expense">Outflow Expenses</option>
+              </select>
+
+              <select id="tx-filter-category" class="form-select">
+                <option value="all">All Categories</option>
+              </select>
+
+              <select id="tx-sort" class="form-select">
+                <option value="date-desc">Newest First</option>
+                <option value="date-asc">Oldest First</option>
+                <option value="amt-desc">Highest Capital</option>
+                <option value="amt-asc">Lowest Capital</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="table-responsive">
+            <table class="fintech-table" id="transactions-table">
+              <thead>
+                <tr>
+                  <th>Posting Date</th>
+                  <th>Classification</th>
+                  <th>Category / Channel</th>
+                  <th class="text-right">Capital Amount</th>
+                  <th>Memo & Documentation</th>
+                  <th class="text-center">Operations</th>
+                </tr>
+              </thead>
+              <tbody id="tx-tbody">
+                <!-- Dynamically populated rows -->
+              </tbody>
+            </table>
+          </div>
+
+          <div id="tx-empty-state" class="empty-state hidden">
+            <div class="empty-icon">
+              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+            </div>
+            <h4>No Ledger Records Found</h4>
+            <p>No transaction rows match your current search query or filter constraints.</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- View: Reports & Export -->
+      <section id="view-reports" class="view-content">
+        <div class="panel-card mb-6">
+          <div class="reports-header-flex">
+            <div>
+              <h3>Statement Generator & Audit Export</h3>
+              <p>Configure custom date boundary conditions for ledger synthesis and vector PDF issuance.</p>
+            </div>
+            <button class="btn btn-primary" id="btn-generate-pdf">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+              <span>Export Vector PDF</span>
+            </button>
+          </div>
+
+          <div class="date-bounds-grid mt-4">
+            <div class="form-group">
+              <label>Reconciliation Start Date</label>
+              <input type="date" id="report-start-date" class="form-input">
+            </div>
+            <div class="form-group">
+              <label>Reconciliation Cutoff Date</label>
+              <input type="date" id="report-end-date" class="form-input">
+            </div>
+            <div class="form-group flex-end">
+              <button class="btn btn-secondary w-full" id="btn-apply-report">Run Audit Report</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="panel-card" id="report-preview-panel">
+          <div class="report-statement-header">
+            <div>
+              <span class="tag-status">Certified Statement</span>
+              <h2 class="mt-1" id="rep-disp-range">Full Portfolio History</h2>
+            </div>
+            <div class="text-right">
+              <div class="rep-metric-label">Period Net Delta</div>
+              <div class="rep-metric-val font-tabular" id="rep-disp-net">₹0</div>
+            </div>
+          </div>
+
+          <div class="statement-grid mt-6">
+            <div class="statement-stat">
+              <span>Opening Balance Prior</span>
+              <strong id="rep-disp-open" class="font-tabular">₹0</strong>
+            </div>
+            <div class="statement-stat">
+              <span>Total Deposits (+)</span>
+              <strong id="rep-disp-income" class="font-tabular text-success">₹0</strong>
+            </div>
+            <div class="statement-stat">
+              <span>Total Debits (-)</span>
+              <strong id="rep-disp-expense" class="font-tabular text-danger">₹0</strong>
+            </div>
+            <div class="statement-stat">
+              <span>Closing Ledger Balance</span>
+              <strong id="rep-disp-close" class="font-tabular">₹0</strong>
+            </div>
+          </div>
+
+          <h4 class="mt-8 mb-3">Categorical Disbursement</h4>
+          <div class="table-responsive">
+            <table class="fintech-table">
+              <thead>
+                <tr>
+                  <th>Category</th>
+                  <th class="text-right">Amount Disbursed</th>
+                  <th class="text-right">Allocation %</th>
+                  <th class="text-right">Record Count</th>
+                </tr>
+              </thead>
+              <tbody id="rep-category-tbody"></tbody>
+            </table>
+          </div>
+
+          <h4 class="mt-8 mb-3">Statement Row Disclosures</h4>
+          <div class="table-responsive">
+            <table class="fintech-table">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Type</th>
+                  <th>Entity / Stream</th>
+                  <th class="text-right">Amount</th>
+                  <th>Memo Notes</th>
+                </tr>
+              </thead>
+              <tbody id="rep-transactions-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Danger Zone -->
+        <div class="panel-card border-danger mt-6">
+          <div class="danger-zone-flex">
+            <div>
+              <h4 class="text-danger">Purge Local Ledger Database</h4>
+              <p>Permanently wipe all indexed transactions, categories, and opening equity from local browser storage.</p>
+            </div>
+            <button class="btn btn-danger-solid" id="btn-reset-data">Purge All Data</button>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- Modal: Money Received Form -->
+  <div class="modal-backdrop" id="modal-income">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3>Record Incoming Capital</h3>
+        <button class="modal-close" data-close="modal-income">&times;</button>
+      </div>
+      <form id="form-income" class="modal-body">
+        <div class="form-group">
+          <label for="inc-amount">Capital Inflow Amount (₹) <span class="req">*</span></label>
+          <input type="number" step="0.01" min="0.01" id="inc-amount" class="form-input" placeholder="0.00" required>
+        </div>
+        <div class="form-group">
+          <label for="inc-source">Funding Channel / Origin <span class="req">*</span></label>
+          <input type="text" id="inc-source" class="form-input" placeholder="e.g. Salary, Parents, Freelance, Dividend" required>
+        </div>
+        <div class="form-group">
+          <label for="inc-date">Transaction Date <span class="req">*</span></label>
+          <input type="date" id="inc-date" class="form-input" required>
+        </div>
+        <div class="form-group">
+          <label for="inc-desc">Documentation Notes / Description</label>
+          <input type="text" id="inc-desc" class="form-input" placeholder="Optional reference notes">
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-ghost" data-close="modal-income">Dismiss</button>
+          <button type="submit" class="btn btn-primary">Post Capital Inflow</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Expense Form -->
+  <div class="modal-backdrop" id="modal-expense">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3>Record Capital Disbursement</h3>
+        <button class="modal-close" data-close="modal-expense">&times;</button>
+      </div>
+      <form id="form-expense" class="modal-body">
+        <div class="form-group">
+          <label for="exp-amount">Outflow Amount (₹) <span class="req">*</span></label>
+          <input type="number" step="0.01" min="0.01" id="exp-amount" class="form-input" placeholder="0.00" required>
+        </div>
+        <div class="form-group">
+          <label for="exp-category">Expense Category <span class="req">*</span></label>
+          <div class="input-inline-btn">
+            <select id="exp-category" class="form-select" required></select>
+            <button type="button" class="btn btn-secondary" id="btn-add-custom-cat" title="Add Custom Category">+</button>
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="exp-date">Transaction Date <span class="req">*</span></label>
+          <input type="date" id="exp-date" class="form-input" required>
+        </div>
+        <div class="form-group">
+          <label for="exp-desc">Item Description</label>
+          <input type="text" id="exp-desc" class="form-input" placeholder="e.g. Groceries, AWS bill, Rent">
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-ghost" data-close="modal-expense">Dismiss</button>
+          <button type="submit" class="btn btn-secondary">Commit Expense</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Starting Balance -->
+  <div class="modal-backdrop" id="modal-starting-balance">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3>Starting Portfolio Capital</h3>
+        <button class="modal-close" data-close="modal-starting-balance">&times;</button>
+      </div>
+      <form id="form-starting-balance" class="modal-body">
+        <p class="modal-note">Initial balance establishes baseline available equity prior to ledger logging. It is never marked as an expense or categorized as income.</p>
+        <div class="form-group">
+          <label for="start-balance-val">Initial Balance Reserve (₹) <span class="req">*</span></label>
+          <input type="number" step="0.01" min="0" id="start-balance-val" class="form-input" placeholder="0" required>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-ghost" data-close="modal-starting-balance">Dismiss</button>
+          <button type="submit" class="btn btn-primary">Update Starting Capital</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Edit Record -->
+  <div class="modal-backdrop" id="modal-edit">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <h3>Modify Ledger Record</h3>
+        <button class="modal-close" data-close="modal-edit">&times;</button>
+      </div>
+      <form id="form-edit" class="modal-body">
+        <input type="hidden" id="edit-id">
+        <input type="hidden" id="edit-type">
+        
+        <div class="form-group">
+          <label for="edit-amount">Capital Amount (₹) <span class="req">*</span></label>
+          <input type="number" step="0.01" min="0.01" id="edit-amount" class="form-input" required>
+        </div>
+        <div class="form-group" id="group-edit-category">
+          <label for="edit-category">Expense Category <span class="req">*</span></label>
+          <select id="edit-category" class="form-select"></select>
+        </div>
+        <div class="form-group" id="group-edit-source">
+          <label for="edit-source">Funding Origin / Source <span class="req">*</span></label>
+          <input type="text" id="edit-source" class="form-input">
+        </div>
+        <div class="form-group">
+          <label for="edit-date">Posting Date <span class="req">*</span></label>
+          <input type="date" id="edit-date" class="form-input" required>
+        </div>
+        <div class="form-group">
+          <label for="edit-desc">Memo / Reference</label>
+          <input type="text" id="edit-desc" class="form-input">
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-ghost" data-close="modal-edit">Dismiss</button>
+          <button type="submit" class="btn btn-primary">Save Changes</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
